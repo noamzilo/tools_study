@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "tools-study"
+version = "0.1.0"
+description = ""
+authors = ["noam_wsl <noamzilo@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "flows" }, { include = "models" }, { include = "data" }, { include = "utils" }]
+# optional: add `include = "."` if you move the main script to root
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+metaflow = "^2.15.6"
+torch = "^2.6.0"
+lightning = "^2.5.1"
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+pytest = "^8.3.5"
+
+[tool.poetry.scripts]
+train = "flows.train_model_flow:TrainModelFlow"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
