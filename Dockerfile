@@ -1,28 +1,41 @@
-# Start with base Python image
+# Base image with Python 3.10
 FROM python:3.10-slim
 
-# Install OS-level deps
-RUN apt-get update && apt-get install -y curl build-essential git && rm -rf /var/lib/apt/lists/*
+# System deps
+RUN apt-get update && apt-get install -y \
+	curl \
+	build-essential \
+	git \
+	&& rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+	ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+
+# Disable poetry creating venvs (we want global env in container)
+ENV POETRY_VIRTUALENVS_CREATE=false
 
 # Set working directory
 WORKDIR /app
 
-# Copy only project files needed for dependency resolution
+# Install awscli + metaflow dependencies
+RUN pip install --upgrade pip && pip install awscli boto3 psutil
+
+# Copy Poetry project files
 COPY pyproject.toml poetry.lock* ./
 
-# Install dependencies (no virtualenv inside container)
-ENV POETRY_VIRTUALENVS_CREATE=false
-RUN poetry install --no-interaction --no-ansi
+# Install deps
+RUN poetry install --no-root --no-interaction --no-ansi
 
-# Copy the rest of the source code
+# Copy source code
 COPY . .
 
-# Add init files (just in case)
-RUN touch flows/__init__.py models/__init__.py data/__init__.py utils/__init__.py
+# (Optional) Add __init__.py if needed
+RUN mkdir -p flows models data utils && \
+	touch flows/__init__.py models/__init__.py data/__init__.py utils/__init__.py
 
-# Run Metaflow flow
-ENTRYPOINT ["python", "flows/train_model_flow.py", "run"]
+# Set AWS Region as default environment var
+ENV AWS_DEFAULT_REGION=us-east-1
+
+# CMD not ENTRYPOINT so Batch can override it
+CMD ["python"]
